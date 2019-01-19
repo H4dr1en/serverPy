@@ -1,1 +1,6 @@
 Flask==1.0.2
+redis==2.10.*
+celery==4.2.*
+requests==2.21.*
+gunicorn==19.9.*
+fastdtw==0.3.*
