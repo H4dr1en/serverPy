@@ -34,11 +34,12 @@ def make_celery(app):
 celery = make_celery(app)
 
 
-@celery.task(bind=True)
+@celery.task(bind=True, time_limit=60)
 def start_process(self, req):
 
     self.update_state(state='PROGRESS', meta={
-        "client": req['uid']
+        "client": req['uid'],
+        "output" : 'PROGRESS'
     })
 
     user = getUserSignatures(req['uid'])
@@ -70,6 +71,7 @@ def start_process(self, req):
             "client": req['uid'],
             "isAuthValid": meta["isAuthValid"]
         }), headers={'Content-Type': 'application/json'})
+        meta["output"] = "SUCCESS"
 
     except:
         meta = {
@@ -102,9 +104,11 @@ def checkStatus(task_id):
 
     task = start_process.AsyncResult(task_id)
 
-    if task.info.get('output', '') != 'FAILURE':
+    status = task.info.get('output')
+
+    if status != 'FAILURE':
         response = {
-            'state': 'SUCCESS',
+            'state': status,
             'client': task.info.get('client')
         }
         
@@ -116,8 +120,12 @@ def checkStatus(task_id):
             'state': 'FAILURE',     
             'client': task.info.get('client'),
             'msg': task.info.get('msg', ''),
-            'isAuthValid': False
+            'isAuthValid': False # Invalid authentification
         }
+
+    if status != 'PROGRESS':    # If task is finished, clear results
+        task.forget()
+
     return jsonify(response)
 
 

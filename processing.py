@@ -146,6 +146,12 @@ def process(req, user):
     df1 = df1.append(user, ignore_index=True) 
     df2 = df2.append(req, ignore_index=True) 
 
+    if len(df2.index) != 1: # Refusing multiples signatures
+        return False
+
+    if len(df1.index) < 5: # Refusing verification if insuffisant saved number of signatures, because verification is not relevant otherwise
+        return False
+
     df1_features = preprocess(df1)
     df2_features = preprocess(df2)
     
